@@ -1,4 +1,3 @@
-
 "use client"
 // Cloudinary config
 const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "dmg8aykl8";
@@ -123,14 +122,14 @@ export default function AdminProducts() {
   }
 
   const handleAddProduct = async () => {
+    if (adding) return; // Prevent multiple submissions
     setAdding(true)
     let imageUrls: string[] = [];
     if (newProduct.images && newProduct.images.length > 0) {
       for (const file of newProduct.images) {
         const formData = new FormData();
         formData.append("file", file);
-        formData.append("upload_preset", "ml_default"); // Use your Cloudinary unsigned upload preset
-        // Optionally: formData.append("folder", "products");
+        formData.append("upload_preset", "ml_default");
         const res = await fetch(CLOUDINARY_UPLOAD_URL, {
           method: "POST",
           body: formData,
@@ -183,31 +182,31 @@ export default function AdminProducts() {
       })
       const data = await res.json()
       if (data.success) {
-        fetchProducts()
+        await fetchProducts()
+        setIsAddingProduct(false)
+        setNewProduct({
+          name: "",
+          description: "",
+          price: "",
+          originalPrice: "",
+          stock: "",
+          category: "",
+          images: [],
+          imagePreviews: [],
+          image: null,
+          imagePreview: "",
+          features: [""],
+          specifications: [{ key: "", value: "" }],
+          benefits: [""],
+          isBulk: false,
+          minBulkQuantity: "",
+          bulkPrice: "",
+        })
       }
     } catch (err) {
       // Optionally, show error
     }
-    setIsAddingProduct(false)
     setAdding(false)
-    setNewProduct({
-      name: "",
-      description: "",
-      price: "",
-      originalPrice: "",
-      stock: "",
-      category: "",
-      images: [],
-      imagePreviews: [],
-      image: null,
-      imagePreview: "",
-      features: [""],
-      specifications: [{ key: "", value: "" }],
-      benefits: [""],
-      isBulk: false,
-      minBulkQuantity: "",
-      bulkPrice: "",
-    })
   }
 
   // Revoke object URLs to prevent memory leaks
@@ -251,6 +250,29 @@ export default function AdminProducts() {
     })
   }
 
+  // Reset all products (backend + frontend)
+  const handleResetProducts = async () => {
+    if (!window.confirm("Are you sure you want to reset all products and revenue? This cannot be undone.")) return;
+    try {
+      const res = await fetch("/api/admin/analytics/reset-products", { method: "POST" });
+      let data;
+      const text = await res.text();
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        alert("Server error: Invalid JSON response");
+        return;
+      }
+      if (!data.success) {
+        alert(data?.error || "Failed to reset products");
+        return;
+      }
+      await fetchProducts();
+    } catch (err) {
+      alert("Failed to reset products");
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -259,306 +281,317 @@ export default function AdminProducts() {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Products Management</h2>
           <p className="text-gray-600 dark:text-gray-300">Manage your product catalog and inventory</p>
         </div>
-        <Dialog open={isAddingProduct} onOpenChange={setIsAddingProduct}>
-          <DialogTrigger asChild>
-            <Button className="bg-amber-600 hover:bg-amber-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Product
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Add New Product</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              {/* Bulk Product Toggle */}
-              <div className="flex items-center space-x-4">
-                <Label htmlFor="isBulk">Bulk Product?</Label>
-                <input
-                  id="isBulk"
-                  type="checkbox"
-                  checked={newProduct.isBulk}
-                  onChange={e => setNewProduct(prev => ({ ...prev, isBulk: e.target.checked }))}
-                  className="h-5 w-5"
-                />
-              </div>
-              {newProduct.isBulk && (
+        <div className="flex space-x-2">
+          <Dialog open={isAddingProduct} onOpenChange={setIsAddingProduct}>
+            <DialogTrigger asChild>
+              <Button className="bg-amber-600 hover:bg-amber-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Product
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Add New Product</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                {/* Bulk Product Toggle */}
+                <div className="flex items-center space-x-4">
+                  <Label htmlFor="isBulk">Bulk Product?</Label>
+                  <input
+                    id="isBulk"
+                    type="checkbox"
+                    checked={newProduct.isBulk}
+                    onChange={e => setNewProduct(prev => ({ ...prev, isBulk: e.target.checked }))}
+                    className="h-5 w-5"
+                  />
+                </div>
+                {newProduct.isBulk && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="minBulkQuantity">Min No. of Products</Label>
+                      <Input
+                        id="minBulkQuantity"
+                        type="number"
+                        placeholder="e.g. 10"
+                        value={newProduct.minBulkQuantity !== undefined ? String(newProduct.minBulkQuantity ?? '') : ''}
+                        onChange={e => setNewProduct(prev => ({ ...prev, minBulkQuantity: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="bulkPrice">Bulk Price (₹)</Label>
+                      <Input
+                        id="bulkPrice"
+                        type="number"
+                        placeholder="e.g. 200"
+                        value={newProduct.bulkPrice !== undefined ? String(newProduct.bulkPrice ?? '') : ''}
+                        onChange={e => setNewProduct(prev => ({ ...prev, bulkPrice: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                )}
+                {/* Image Upload */}
+                <div className="space-y-2">
+                  <Label htmlFor="images">Product Images</Label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                    {newProduct.imagePreviews && newProduct.imagePreviews.length > 0 ? (
+                      <div className="flex flex-wrap gap-4 justify-center">
+                        {newProduct.imagePreviews.map((preview, idx) => (
+                          <div key={idx} className="relative h-24 w-24 rounded-lg overflow-hidden">
+                            <Image src={preview || "/placeholder.svg"} alt={`Product preview ${idx + 1}`} fill className="object-cover" />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                              onClick={() => removeImage(idx)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <Upload className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                        <p className="text-sm text-gray-600 mb-2">Click to upload product images</p>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleImageUpload}
+                          className="hidden"
+                          id="images-upload"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => document.getElementById("images-upload")?.click()}
+                        >
+                          Choose Images
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="minBulkQuantity">Min No. of Products</Label>
+                    <Label htmlFor="name">Product Name</Label>
                     <Input
-                      id="minBulkQuantity"
-                      type="number"
-                      placeholder="e.g. 10"
-                      value={newProduct.minBulkQuantity !== undefined ? String(newProduct.minBulkQuantity ?? '') : ''}
-                      onChange={e => setNewProduct(prev => ({ ...prev, minBulkQuantity: e.target.value }))}
+                      id="name"
+                      placeholder="Enter product name"
+                      value={newProduct.name}
+                      onChange={(e) => setNewProduct((prev) => ({ ...prev, name: e.target.value }))}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="bulkPrice">Bulk Price (₹)</Label>
+                    <Label htmlFor="price">Price (₹)</Label>
                     <Input
-                      id="bulkPrice"
+                      id="price"
                       type="number"
-                      placeholder="e.g. 200"
-                      value={newProduct.bulkPrice !== undefined ? String(newProduct.bulkPrice ?? '') : ''}
-                      onChange={e => setNewProduct(prev => ({ ...prev, bulkPrice: e.target.value }))}
+                      placeholder="0"
+                      value={newProduct.price}
+                      onChange={(e) => setNewProduct((prev) => ({ ...prev, price: e.target.value }))}
                     />
                   </div>
                 </div>
-              )}
-              {/* Image Upload */}
-              <div className="space-y-2">
-                <Label htmlFor="images">Product Images</Label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
-                  {newProduct.imagePreviews && newProduct.imagePreviews.length > 0 ? (
-                    <div className="flex flex-wrap gap-4 justify-center">
-                      {newProduct.imagePreviews.map((preview, idx) => (
-                        <div key={idx} className="relative h-24 w-24 rounded-lg overflow-hidden">
-                          <Image src={preview || "/placeholder.svg"} alt={`Product preview ${idx + 1}`} fill className="object-cover" />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="originalPrice">Original Price (₹)</Label>
+                    <Input
+                      id="originalPrice"
+                      type="number"
+                      placeholder="0"
+                      value={newProduct.originalPrice}
+                      onChange={(e) => setNewProduct((prev) => ({ ...prev, originalPrice: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Category</Label>
+                    <Input
+                      id="category"
+                      placeholder="e.g., Honey, Beeswax"
+                      value={newProduct.category}
+                      onChange={(e) => setNewProduct((prev) => ({ ...prev, category: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    placeholder="Product description"
+                    rows={3}
+                    value={newProduct.description}
+                    onChange={(e) => setNewProduct((prev) => ({ ...prev, description: e.target.value }))}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="stock">Stock Quantity</Label>
+                    <Input
+                      id="stock"
+                      type="number"
+                      placeholder="0"
+                      value={newProduct.stock}
+                      onChange={(e) => setNewProduct((prev) => ({ ...prev, stock: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                {/* Advanced Section: Features, Specifications, Benefits */}
+                <Accordion type="multiple" className="w-full">
+                  <AccordionItem value="features">
+                    <AccordionTrigger>Features</AccordionTrigger>
+                    <AccordionContent>
+                      {newProduct.features.map((feature, idx) => (
+                        <div key={idx} className="flex items-center gap-2 mb-2">
+                          <Input
+                            value={String(feature ?? "")}
+                            placeholder={`Feature ${idx + 1}`}
+                            onChange={e => {
+                              const features = [...newProduct.features]
+                              features[idx] = e.target.value
+                              setNewProduct(prev => ({ ...prev, features }))
+                            }}
+                          />
                           <Button
                             type="button"
                             variant="destructive"
-                            size="sm"
-                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
-                            onClick={() => removeImage(idx)}
+                            size="icon"
+                            onClick={() => {
+                              setNewProduct(prev => ({ ...prev, features: prev.features.filter((_, i) => i !== idx) }))
+                            }}
+                            disabled={newProduct.features.length === 1}
                           >
-                            <X className="h-3 w-3" />
+                            <X className="h-4 w-4" />
                           </Button>
                         </div>
                       ))}
-                    </div>
-                  ) : (
-                    <div className="text-center">
-                      <Upload className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-600 mb-2">Click to upload product images</p>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleImageUpload}
-                        className="hidden"
-                        id="images-upload"
-                      />
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() => document.getElementById("images-upload")?.click()}
+                        size="sm"
+                        onClick={() => setNewProduct(prev => ({ ...prev, features: [...prev.features, ""] }))}
                       >
-                        Choose Images
+                        Add Feature
                       </Button>
-                    </div>
-                  )}
+                    </AccordionContent>
+                  </AccordionItem>
+                  <AccordionItem value="specifications">
+                    <AccordionTrigger>Specifications</AccordionTrigger>
+                    <AccordionContent>
+                      {newProduct.specifications.map((spec, idx) => (
+                        <div key={idx} className="flex items-center gap-2 mb-2">
+                          <Input
+                            value={String(spec.key ?? "")}
+                            placeholder="Key"
+                            onChange={e => {
+                              const specifications = [...newProduct.specifications]
+                              specifications[idx].key = e.target.value
+                              setNewProduct(prev => ({ ...prev, specifications }))
+                            }}
+                          />
+                          <Input
+                            value={String(spec.value ?? "")}
+                            placeholder="Value"
+                            onChange={e => {
+                              const specifications = [...newProduct.specifications]
+                              specifications[idx].value = e.target.value
+                              setNewProduct(prev => ({ ...prev, specifications }))
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            onClick={() => {
+                              setNewProduct(prev => ({ ...prev, specifications: prev.specifications.filter((_, i) => i !== idx) }))
+                            }}
+                            disabled={newProduct.specifications.length === 1}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setNewProduct(prev => ({ ...prev, specifications: [...prev.specifications, { key: "", value: "" }] }))}
+                      >
+                        Add Specification
+                      </Button>
+                    </AccordionContent>
+                  </AccordionItem>
+                  <AccordionItem value="benefits">
+                    <AccordionTrigger>Benefits</AccordionTrigger>
+                    <AccordionContent>
+                      {newProduct.benefits.map((benefit, idx) => (
+                        <div key={idx} className="flex items-center gap-2 mb-2">
+                          <Input
+                            value={String(benefit ?? "")}
+                            placeholder={`Benefit ${idx + 1}`}
+                            onChange={e => {
+                              const benefits = [...newProduct.benefits]
+                              benefits[idx] = e.target.value
+                              setNewProduct(prev => ({ ...prev, benefits }))
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            onClick={() => {
+                              setNewProduct(prev => ({ ...prev, benefits: prev.benefits.filter((_, i) => i !== idx) }))
+                            }}
+                            disabled={newProduct.benefits.length === 1}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setNewProduct(prev => ({ ...prev, benefits: [...prev.benefits, ""] }))}
+                      >
+                        Add Benefit
+                      </Button>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={() => setIsAddingProduct(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleAddProduct} className="bg-amber-600 hover:bg-amber-700" disabled={adding}>
+                    {adding ? (
+                      <span className="flex items-center justify-center">
+                        <svg className="animate-spin h-4 w-4 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                        </svg>
+                        Adding...
+                      </span>
+                    ) : (
+                      "Add Product"
+                    )}
+                  </Button>
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Product Name</Label>
-                  <Input
-                    id="name"
-                    placeholder="Enter product name"
-                    value={newProduct.name}
-                    onChange={(e) => setNewProduct((prev) => ({ ...prev, name: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="price">Price (₹)</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    placeholder="0"
-                    value={newProduct.price}
-                    onChange={(e) => setNewProduct((prev) => ({ ...prev, price: e.target.value }))}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="originalPrice">Original Price (₹)</Label>
-                  <Input
-                    id="originalPrice"
-                    type="number"
-                    placeholder="0"
-                    value={newProduct.originalPrice}
-                    onChange={(e) => setNewProduct((prev) => ({ ...prev, originalPrice: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <Input
-                    id="category"
-                    placeholder="e.g., Honey, Beeswax"
-                    value={newProduct.category}
-                    onChange={(e) => setNewProduct((prev) => ({ ...prev, category: e.target.value }))}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Product description"
-                  rows={3}
-                  value={newProduct.description}
-                  onChange={(e) => setNewProduct((prev) => ({ ...prev, description: e.target.value }))}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="stock">Stock Quantity</Label>
-                  <Input
-                    id="stock"
-                    type="number"
-                    placeholder="0"
-                    value={newProduct.stock}
-                    onChange={(e) => setNewProduct((prev) => ({ ...prev, stock: e.target.value }))}
-                  />
-                </div>
-              </div>
-              {/* Advanced Section: Features, Specifications, Benefits */}
-              <Accordion type="multiple" className="w-full">
-                <AccordionItem value="features">
-                  <AccordionTrigger>Features</AccordionTrigger>
-                  <AccordionContent>
-                    {newProduct.features.map((feature, idx) => (
-                      <div key={idx} className="flex items-center gap-2 mb-2">
-                        <Input
-                          value={String(feature ?? "")}
-                          placeholder={`Feature ${idx + 1}`}
-                          onChange={e => {
-                            const features = [...newProduct.features]
-                            features[idx] = e.target.value
-                            setNewProduct(prev => ({ ...prev, features }))
-                          }}
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="icon"
-                          onClick={() => {
-                            setNewProduct(prev => ({ ...prev, features: prev.features.filter((_, i) => i !== idx) }))
-                          }}
-                          disabled={newProduct.features.length === 1}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setNewProduct(prev => ({ ...prev, features: [...prev.features, ""] }))}
-                    >
-                      Add Feature
-                    </Button>
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="specifications">
-                  <AccordionTrigger>Specifications</AccordionTrigger>
-                  <AccordionContent>
-                    {newProduct.specifications.map((spec, idx) => (
-                      <div key={idx} className="flex items-center gap-2 mb-2">
-                        <Input
-                          value={String(spec.key ?? "")}
-                          placeholder="Key"
-                          onChange={e => {
-                            const specifications = [...newProduct.specifications]
-                            specifications[idx].key = e.target.value
-                            setNewProduct(prev => ({ ...prev, specifications }))
-                          }}
-                        />
-                        <Input
-                          value={String(spec.value ?? "")}
-                          placeholder="Value"
-                          onChange={e => {
-                            const specifications = [...newProduct.specifications]
-                            specifications[idx].value = e.target.value
-                            setNewProduct(prev => ({ ...prev, specifications }))
-                          }}
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="icon"
-                          onClick={() => {
-                            setNewProduct(prev => ({ ...prev, specifications: prev.specifications.filter((_, i) => i !== idx) }))
-                          }}
-                          disabled={newProduct.specifications.length === 1}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setNewProduct(prev => ({ ...prev, specifications: [...prev.specifications, { key: "", value: "" }] }))}
-                    >
-                      Add Specification
-                    </Button>
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="benefits">
-                  <AccordionTrigger>Benefits</AccordionTrigger>
-                  <AccordionContent>
-                    {newProduct.benefits.map((benefit, idx) => (
-                      <div key={idx} className="flex items-center gap-2 mb-2">
-                        <Input
-                          value={String(benefit ?? "")}
-                          placeholder={`Benefit ${idx + 1}`}
-                          onChange={e => {
-                            const benefits = [...newProduct.benefits]
-                            benefits[idx] = e.target.value
-                            setNewProduct(prev => ({ ...prev, benefits }))
-                          }}
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="icon"
-                          onClick={() => {
-                            setNewProduct(prev => ({ ...prev, benefits: prev.benefits.filter((_, i) => i !== idx) }))
-                          }}
-                          disabled={newProduct.benefits.length === 1}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setNewProduct(prev => ({ ...prev, benefits: [...prev.benefits, ""] }))}
-                    >
-                      Add Benefit
-                    </Button>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setIsAddingProduct(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleAddProduct} className="bg-amber-600 hover:bg-amber-700" disabled={adding}>
-                  {adding ? (
-                    <span className="flex items-center justify-center">
-                      <svg className="animate-spin h-4 w-4 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                      </svg>
-                      Adding...
-                    </span>
-                  ) : (
-                    "Add Product"
-                  )}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={handleResetProducts}
+            className="ml-2"
+            title="Reset all products"
+          >
+            Reset All Products
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}

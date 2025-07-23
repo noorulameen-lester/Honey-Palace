@@ -19,6 +19,7 @@ import {
   Eye,
   Edit,
   Star,
+  Trash2,
 } from "lucide-react"
 
 export default function AdminCustomers() {
@@ -28,6 +29,8 @@ export default function AdminCustomers() {
   const [currentPage, setCurrentPage] = useState(1)
   const [customers, setCustomers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [customerToDelete, setCustomerToDelete] = useState<any>(null)
   const itemsPerPage = 12
 
   useEffect(() => {
@@ -127,6 +130,39 @@ export default function AdminCustomers() {
     }
   }
 
+  // Handler to delete customer (frontend only, add API call if needed)
+  const handleDeleteCustomer = async () => {
+    if (!customerToDelete) return
+    // Optionally call your API here to delete from backend
+    // await fetch(`/api/customers/${customerToDelete.email}`, { method: "DELETE" })
+    setCustomers((prev) => prev.filter((c) => c.email !== customerToDelete.email))
+    setShowDeleteDialog(false)
+    setCustomerToDelete(null)
+  }
+
+  // Reset all customers (backend + frontend)
+  const handleResetCustomers = async () => {
+    if (!window.confirm("Are you sure you want to reset all customers? This cannot be undone.")) return;
+    try {
+      const res = await fetch("/api/admin/analytics/reset-customers", { method: "POST" });
+      let data;
+      const text = await res.text();
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        alert("Server error: Invalid JSON response");
+        return;
+      }
+      if (!data.success) {
+        alert(data?.error || "Failed to reset customers");
+        return;
+      }
+      await fetchCustomers();
+    } catch (err) {
+      alert("Failed to reset customers");
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -142,6 +178,15 @@ export default function AdminCustomers() {
           <Button size="sm" className="bg-amber-600 hover:bg-amber-700">
             <UserPlus className="h-4 w-4 mr-2" />
             Add Customer
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={handleResetCustomers}
+            className="ml-2"
+            title="Reset all customers"
+          >
+            Reset All Customers
           </Button>
         </div>
       </div>
@@ -354,6 +399,17 @@ export default function AdminCustomers() {
                   <Edit className="h-4 w-4 mr-1" />
                   Edit
                 </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => {
+                    setCustomerToDelete(customer)
+                    setShowDeleteDialog(true)
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Delete
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -394,6 +450,26 @@ export default function AdminCustomers() {
           </CardContent>
         </Card>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Customer</DialogTitle>
+          </DialogHeader>
+          <div>
+            <p>Are you sure you want to delete <span className="font-semibold">{customerToDelete?.name}</span>?</p>
+            <div className="flex justify-end space-x-2 mt-6">
+              <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteCustomer}>
+                Delete
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

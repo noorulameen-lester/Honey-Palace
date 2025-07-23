@@ -18,7 +18,7 @@ export default function OrderTrackingLoading() {
             <Skeleton className="h-4 w-64" />
           </CardHeader>
           <CardContent>
-            <div className="flex space-x-4">
+            <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
               <div className="flex-1">
                 <Skeleton className="h-4 w-48 mb-2" />
                 <Skeleton className="h-10 w-full" />

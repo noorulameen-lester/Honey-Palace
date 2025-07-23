@@ -177,6 +177,7 @@ const AdminPage = () => {
         className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         } lg:static lg:z-0 flex flex-col h-screen`}
+        aria-label="Admin Sidebar"
       >
         <div className="p-6 border-b border-gray-200 hidden lg:flex items-center">
           <div className="h-8 w-8 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 flex items-center justify-center mr-3">
@@ -216,7 +217,7 @@ const AdminPage = () => {
                 </div>
                 <div className="ml-3">
                   <p className="text-sm font-medium text-gray-700">{user?.name || "Admin"}</p>
-                  <p className="text-xs text-gray-500">{user?.email}</p>
+                  <p className="text-xs text-gray-500">{user?.email || "admin@honeypalace.com"}</p>
                 </div>
               </div>
               <div className="relative group">

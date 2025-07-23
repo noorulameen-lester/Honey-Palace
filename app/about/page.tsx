@@ -1,4 +1,3 @@
-import * as React from "react";
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
@@ -31,8 +30,9 @@ export default function AboutPage() {
             <div className="space-y-6">
               <h2 className="text-4xl font-bold text-gray-900 dark:text-white">Our Mission</h2>
               <p className="text-lg text-gray-600 dark:text-gray-300">
-                At Honey Palace, we believe honey is more than just nature’s sweetness –
-                it’s a symbol of care, purity, and tradition. Founded by Nafeesa TM, a woman entrepreneur from Wandoor with deep roots in farming, our mission is to revive
+                At Honey Palace, we believe honey is more than just nature’s sweetness – 
+                it’s a symbol of care, purity, and tradition. Founded by Nafeesa TM,
+                a woman entrepreneur from Wandoor with deep roots in farming, our mission is to revive
                 the age-old art of beekeeping while empowering local communities.
               </p>
               <p className="text-lg text-gray-600 dark:text-gray-300">
@@ -49,11 +49,12 @@ export default function AboutPage() {
             </div>
             <div className="relative">
               <Image
-                src="/placeholder.svg"
+                src="/placeholder.svg?height=500&width=600"
                 alt="Beekeeper working with hives"
                 width={600}
                 height={500}
                 className="rounded-2xl shadow-xl"
+                priority
               />
             </div>
           </div>
@@ -66,7 +67,7 @@ export default function AboutPage() {
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Our Values</h2>
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              These core principles guide everything we do at Honey Palace
+              These core principles guide everything we do at Honey Palace.
             </p>
           </div>
 
@@ -75,22 +76,22 @@ export default function AboutPage() {
               {
                 icon: Leaf,
                 title: "Sustainability",
-                description: "We support eco-friendly beekeeping practices that protect our environment",
+                description: "We support eco-friendly beekeeping practices that protect our environment.",
               },
               {
                 icon: Heart,
                 title: "Purity",
-                description: "100% pure honey with no additives, preservatives, or artificial ingredients",
+                description: "100% pure honey with no additives, preservatives, or artificial ingredients.",
               },
               {
                 icon: Users,
                 title: "Community",
-                description: "Supporting local beekeepers and their families across the country",
+                description: "Supporting local beekeepers and their families across the country.",
               },
               {
                 icon: Award,
                 title: "Quality",
-                description: "Rigorous testing and quality control ensure the finest honey reaches you",
+                description: "Rigorous testing and quality control ensure the finest honey reaches you.",
               },
             ].map((value, index) => {
               const Icon = value.icon
@@ -98,7 +99,7 @@ export default function AboutPage() {
                 <Card key={index} className="text-center border-0 shadow-lg">
                   <CardContent className="p-8">
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-600 text-white rounded-full mb-6">
-                      <Icon className="w-8 h-8" />
+                      <Icon className="w-8 h-8" aria-label={value.title} />
                     </div>
                     <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">{value.title}</h3>
                     <p className="text-gray-600 dark:text-gray-300">{value.description}</p>

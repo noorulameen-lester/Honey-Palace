@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Search, Eye, Edit, Truck, Package, CheckCircle, Clock, Calendar, DollarSign } from "lucide-react"
+import { Search, Eye, Edit, Truck, Package, CheckCircle, Clock, Calendar, DollarSign, Trash2 } from "lucide-react"
 import Image from "next/image"
 
 export default function AdminOrders() {
@@ -21,6 +21,12 @@ export default function AdminOrders() {
   const [editingOrder, setEditingOrder] = useState<any>(null)
   const [orders, setOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [orderToDelete, setOrderToDelete] = useState<any>(null)
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false)
+  const [showResetAllDialog, setShowResetAllDialog] = useState(false)
+  const [orderToMarkFake, setOrderToMarkFake] = useState<any>(null)
+  const [showMarkFakeDialog, setShowMarkFakeDialog] = useState(false)
 
   useEffect(() => {
     fetchOrders()
@@ -67,7 +73,11 @@ export default function AdminOrders() {
   }
 
   const handleSelectAll = () => {
-    setSelectedOrders(selectedOrders.length === filteredOrders.length ? [] : filteredOrders.map((order) => order._id))
+    if (selectedOrders.length === filteredOrders.length && filteredOrders.length > 0) {
+      setSelectedOrders([])
+    } else {
+      setSelectedOrders(filteredOrders.map((order) => order._id))
+    }
   }
 
   const getStatusIcon = (status: string | undefined) => {
@@ -96,6 +106,94 @@ export default function AdminOrders() {
     }
   }
 
+  // Delete a single order (frontend only, add API call if needed)
+  const handleDeleteOrder = async () => {
+    if (!orderToDelete) return
+    // Optionally call your API here to delete from backend
+    // await fetch(`/api/orders/${orderToDelete._id}`, { method: "DELETE" })
+    setOrders((prev) => prev.filter((o) => o._id !== orderToDelete._id))
+    setSelectedOrders((prev) => prev.filter((id) => id !== orderToDelete._id))
+    setShowDeleteDialog(false)
+    setOrderToDelete(null)
+  }
+
+  // Delete all selected orders (frontend only, add API call if needed)
+  const handleBulkDeleteOrders = async () => {
+    // Optionally call your API here to delete from backend
+    // await fetch(`/api/orders/bulk-delete`, { method: "POST", body: JSON.stringify({ ids: selectedOrders }) })
+    setOrders((prev) => prev.filter((o) => !selectedOrders.includes(o._id)))
+    setSelectedOrders([])
+    setShowBulkDeleteDialog(false)
+  }
+
+  // Bulk mark as shipped
+  const handleBulkMarkShipped = async () => {
+    // Optionally call your API here to update status in backend
+    setOrders((prev) =>
+      prev.map((o) =>
+        selectedOrders.includes(o._id) ? { ...o, status: "Shipped" } : o
+      )
+    )
+    setSelectedOrders([])
+  }
+
+  // Bulk update status (example: set all selected to "Processing")
+  const handleBulkUpdateStatus = async () => {
+    setOrders((prev) =>
+      prev.map((o) =>
+        selectedOrders.includes(o._id) ? { ...o, status: "Processing" } : o
+      )
+    )
+    setSelectedOrders([])
+  }
+
+  // Bulk export (example: just alert for now)
+  const handleBulkExport = () => {
+    const selected = orders.filter((o) => selectedOrders.includes(o._id))
+    alert("Exported orders: " + selected.map((o) => o._id).join(", "))
+  }
+
+  // Reset all orders (backend + frontend)
+  const handleResetAllOrders = async () => {
+    try {
+      const res = await fetch("/api/admin/analytics/reset-orders", { method: "POST" });
+      let data;
+      const text = await res.text();
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        alert("Server error: Invalid JSON response");
+        setShowResetAllDialog(false);
+        return;
+      }
+      if (!data.success) {
+        alert(data?.error || "Failed to reset orders");
+        setShowResetAllDialog(false);
+        return;
+      }
+      await fetchOrders();
+      setSelectedOrders([]);
+      setShowResetAllDialog(false);
+    } catch (err) {
+      alert("Failed to reset orders");
+      setShowResetAllDialog(false);
+    }
+  }
+
+  // Mark order as fake (frontend only; for real, call an API endpoint)
+  const handleMarkOrderFake = async () => {
+    if (!orderToMarkFake) return
+    // Optionally call your backend API here to mark as fake
+    // await fetch(`/api/orders/${orderToMarkFake._id}/mark-fake`, { method: "PATCH" })
+    setOrders((prev) =>
+      prev.map((o) =>
+        o._id === orderToMarkFake._id ? { ...o, status: "Fake" } : o
+      )
+    )
+    setShowMarkFakeDialog(false)
+    setOrderToMarkFake(null)
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -110,6 +208,15 @@ export default function AdminOrders() {
           </Button>
           <Button size="sm" className="bg-amber-600 hover:bg-amber-700">
             Bulk Actions
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => setShowResetAllDialog(true)}
+            className="ml-2"
+            title="Reset all orders"
+          >
+            Reset All Orders
           </Button>
         </div>
       </div>
@@ -197,14 +304,18 @@ export default function AdminOrders() {
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">{selectedOrders.length} order(s) selected</span>
               <div className="flex space-x-2">
-                <Button size="sm" variant="outline">
+                <Button size="sm" variant="outline" onClick={handleBulkMarkShipped}>
                   Mark as Shipped
                 </Button>
-                <Button size="sm" variant="outline">
+                <Button size="sm" variant="outline" onClick={handleBulkUpdateStatus}>
                   Update Status
                 </Button>
-                <Button size="sm" variant="outline">
+                <Button size="sm" variant="outline" onClick={handleBulkExport}>
                   Export Selected
+                </Button>
+                <Button size="sm" variant="destructive" onClick={() => setShowBulkDeleteDialog(true)}>
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Delete Selected
                 </Button>
               </div>
             </div>
@@ -218,7 +329,17 @@ export default function AdminOrders() {
           <CardTitle className="flex items-center justify-between">
             Orders List
             <div className="flex items-center space-x-2">
-              <Checkbox checked={selectedOrders.length === filteredOrders.length} onCheckedChange={handleSelectAll} />
+              <input
+                type="checkbox"
+                checked={filteredOrders.length > 0 && selectedOrders.length === filteredOrders.length}
+                ref={el => {
+                  if (el) {
+                    el.indeterminate = selectedOrders.length > 0 && selectedOrders.length < filteredOrders.length
+                  }
+                }}
+                onChange={handleSelectAll}
+                className="accent-amber-600 h-4 w-4 rounded border-gray-300"
+              />
               <span className="text-sm text-gray-600">Select All</span>
             </div>
           </CardTitle>
@@ -433,6 +554,28 @@ export default function AdminOrders() {
                             )}
                           </DialogContent>
                         </Dialog>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 border-red-600 hover:bg-red-50"
+                          onClick={() => {
+                            setOrderToMarkFake(order)
+                            setShowMarkFakeDialog(true)
+                          }}
+                        >
+                          Mark as Fake
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            setOrderToDelete(order)
+                            setShowDeleteDialog(true)
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -442,6 +585,82 @@ export default function AdminOrders() {
           )}
         </CardContent>
       </Card>
+      {/* Delete single order dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Order</DialogTitle>
+          </DialogHeader>
+          <div>
+            <p>Are you sure you want to delete order <span className="font-semibold">{orderToDelete?.id || orderToDelete?._id?.slice(-6)}</span>?</p>
+            <div className="flex justify-end space-x-2 mt-6">
+              <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteOrder}>
+                Delete
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* Delete bulk orders dialog */}
+      <Dialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Selected Orders</DialogTitle>
+          </DialogHeader>
+          <div>
+            <p>Are you sure you want to delete <span className="font-semibold">{selectedOrders.length}</span> selected order(s)?</p>
+            <div className="flex justify-end space-x-2 mt-6">
+              <Button variant="outline" onClick={() => setShowBulkDeleteDialog(false)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleBulkDeleteOrders}>
+                Delete All
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* Reset all orders dialog */}
+      <Dialog open={showResetAllDialog} onOpenChange={setShowResetAllDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset All Orders</DialogTitle>
+          </DialogHeader>
+          <div>
+            <p>Are you sure you want to reset <span className="font-semibold">{orders.length}</span> orders? This cannot be undone.</p>
+            <div className="flex justify-end space-x-2 mt-6">
+              <Button variant="outline" onClick={() => setShowResetAllDialog(false)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleResetAllOrders}>
+                Reset All
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* Mark as fake dialog */}
+      <Dialog open={showMarkFakeDialog} onOpenChange={setShowMarkFakeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mark Order as Fake</DialogTitle>
+          </DialogHeader>
+          <div>
+            <p>Are you sure you want to mark order <span className="font-semibold">{orderToMarkFake?.id || orderToMarkFake?._id?.slice(-6)}</span> as <span className="text-red-600 font-semibold">Fake</span>?</p>
+            <div className="flex justify-end space-x-2 mt-6">
+              <Button variant="outline" onClick={() => setShowMarkFakeDialog(false)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleMarkOrderFake}>
+                Mark as Fake
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

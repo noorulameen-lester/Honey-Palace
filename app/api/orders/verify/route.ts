@@ -1,56 +1,34 @@
-import { NextRequest, NextResponse } from "next/server"
-import { connectToDatabase } from "@/lib/mongodb"
-import { ObjectId } from "mongodb"
-import crypto from "crypto"
+import { NextResponse } from "next/server";
+import { connectToDatabase } from "@/lib/mongodb";
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    // OTP verification branch
-    if (body.otp && body.orderId) {
-      const { db } = await connectToDatabase();
-      const order = await db.collection("orders").findOne({ _id: new ObjectId(body.orderId) });
-      if (!order) {
-        return NextResponse.json({ success: false, error: "Order not found" }, { status: 404 });
-      }
-      if (order.otp === body.otp) {
-        await db.collection("orders").updateOne(
-          { _id: new ObjectId(body.orderId) },
-          { $set: { status: "Confirmed" } }
-        );
-        return NextResponse.json({ success: true });
-      } else {
-        return NextResponse.json({ success: false, error: "Invalid OTP" }, { status: 400 });
-      }
-    }
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderId } = body
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !orderId) {
-      return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 })
-    }
+    const data = await req.json();
+    const { db } = await connectToDatabase();
 
-    // Verify signature
-    const generated_signature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
-      .update(razorpay_order_id + "|" + razorpay_payment_id)
-      .digest("hex")
+    // 🟢 Insert order as pending payment
+    const result = await db.collection("orders").insertOne({
+      ...data,
+      status: "Pending Payment", // 👈 change from "Confirmed" to "Pending Payment"
+      createdAt: new Date(),
+    });
 
-    const { db } = await connectToDatabase()
-    if (generated_signature === razorpay_signature) {
-      // Payment is successful
-      await db.collection("orders").updateOne(
-        { _id: new ObjectId(orderId) },
-        { $set: { status: "Paid", razorpayPaymentId: razorpay_payment_id } }
-      )
-      return NextResponse.json({ success: true })
-    } else {
-      // Payment failed
-      await db.collection("orders").updateOne(
-        { _id: new ObjectId(orderId) },
-        { $set: { status: "Payment Failed" } }
-      )
-      return NextResponse.json({ success: false, error: "Signature verification failed" }, { status: 400 })
-    }
+    return NextResponse.json({
+      success: true,
+      message: "Order created, awaiting payment confirmation",
+      orderId: result.insertedId,
+    });
   } catch (error) {
-    return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 })
+    return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
   }
-} 
+}
+
+export async function GET(req: Request) {
+  try {
+    const { db } = await connectToDatabase();
+    const orders = await db.collection("orders").find({}).toArray();
+    return NextResponse.json({ success: true, orders });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
+  }
+}

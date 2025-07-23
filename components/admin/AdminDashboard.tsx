@@ -13,6 +13,8 @@ import {
   Edit,
   ArrowUpRight,
   ArrowDownRight,
+  Clock,
+  CheckCircle,
 } from "lucide-react"
 import Image from "next/image"
 import { useEffect, useState } from "react"
@@ -54,6 +56,12 @@ export default function AdminDashboard() {
   const totalProducts = products.length
   const totalCustomers = customers.length
   const totalRevenue = orders.reduce((sum, order) => sum + (order.total || 0), 0)
+
+  // Calculate live status counts
+  const processingOrders = orders.filter((o) => (o.status || "").toLowerCase() === "processing").length
+  const shippedOrders = orders.filter((o) => (o.status || "").toLowerCase() === "shipped").length
+  const deliveredOrders = orders.filter((o) => (o.status || "").toLowerCase() === "delivered").length
+
   // Always get the 4 most recent orders by createdAt
   const recentOrders = [...orders]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -94,6 +102,43 @@ export default function AdminDashboard() {
       trend: i === 0 ? "up" : p.sales >= arr[i - 1]?.sales ? "up" : "down",
     }))
 
+  // Reset all data (frontend only; for real reset, call an API endpoint)
+  const handleResetAll = async () => {
+    if (!window.confirm("Are you sure you want to reset all orders, products, customers, and revenue? This cannot be undone.")) return;
+    try {
+      const res = await fetch("/api/admin/analytics/reset-all", { method: "POST" });
+      let data;
+      const text = await res.text();
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        alert("Server error: Invalid JSON response");
+        return;
+      }
+      if (!data.success) {
+        alert(data?.error || "Failed to reset data");
+        return;
+      }
+      setOrders([]);
+      setProducts([]);
+      setCustomers([]);
+      // Optionally, refetch from backend to confirm
+      const [ordersRes, productsRes, usersRes] = await Promise.all([
+        fetch("/api/orders"),
+        fetch("/api/products"),
+        fetch("/api/users"),
+      ]);
+      const ordersData = await ordersRes.json();
+      const productsData = await productsRes.json();
+      const usersData = await usersRes.json();
+      if (ordersData.success) setOrders(ordersData.orders);
+      if (productsData.success) setProducts(productsData.products);
+      if (usersData.success) setCustomers(usersData.users || []);
+    } catch (err) {
+      alert("Failed to reset data");
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -110,6 +155,15 @@ export default function AdminDashboard() {
           <Button size="sm" className="bg-amber-600 hover:bg-amber-700">
             <Edit className="h-4 w-4 mr-2" />
             Quick Actions
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={handleResetAll}
+            className="ml-2"
+            title="Reset all data"
+          >
+            Reset All Data
           </Button>
         </div>
       </div>
@@ -157,6 +211,43 @@ export default function AdminDashboard() {
                 <p className="text-3xl font-bold text-gray-900 dark:text-white">₹{loading ? "-" : totalRevenue.toLocaleString()}</p>
               </div>
               <TrendingUp className="h-8 w-8 text-amber-600" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Stats by status */}
+      <div className="grid md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Processing</p>
+                <p className="text-2xl font-bold">{loading ? "-" : processingOrders}</p>
+              </div>
+              <Clock className="h-8 w-8 text-yellow-600" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Shipped</p>
+                <p className="text-2xl font-bold">{loading ? "-" : shippedOrders}</p>
+              </div>
+              <Package className="h-8 w-8 text-blue-600" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Delivered</p>
+                <p className="text-2xl font-bold">{loading ? "-" : deliveredOrders}</p>
+              </div>
+              <CheckCircle className="h-8 w-8 text-green-600" />
             </div>
           </CardContent>
         </Card>

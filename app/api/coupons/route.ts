@@ -7,7 +7,10 @@ export async function POST(req: NextRequest) {
     const data = await req.json();
     const { db } = await connectToDatabase();
     data.createdAt = new Date();
-    // Optionally, validate data here
+    // Basic validation
+    if (!data.code || typeof data.code !== "string") {
+      return NextResponse.json({ success: false, error: "Coupon code is required" }, { status: 400 });
+    }
     const result = await db.collection("coupons").insertOne(data);
     return NextResponse.json({ success: true, insertedId: result.insertedId });
   } catch (error) {
@@ -45,6 +48,9 @@ export async function PATCH(req: NextRequest) {
   try {
     const { id, ...update } = await req.json();
     if (!id) return NextResponse.json({ success: false, error: "Missing coupon id" }, { status: 400 });
+    if (Object.keys(update).length === 0) {
+      return NextResponse.json({ success: false, error: "No update fields provided" }, { status: 400 });
+    }
     const { db } = await connectToDatabase();
     const result = await db.collection("coupons").updateOne(
       { _id: new ObjectId(id) },
@@ -58,4 +64,4 @@ export async function PATCH(req: NextRequest) {
   } catch (error) {
     return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
   }
-} 
+}
