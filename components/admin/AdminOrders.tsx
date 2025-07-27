@@ -36,7 +36,15 @@ export default function AdminOrders() {
     setLoading(true)
     try {
       const res = await fetch("/api/orders")
-      const data = await res.json()
+      let data;
+      const text = await res.text();
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        setLoading(false);
+        alert("Server error: Invalid JSON response");
+        return;
+      }
       if (data.success) {
         setOrders(data.orders)
       }

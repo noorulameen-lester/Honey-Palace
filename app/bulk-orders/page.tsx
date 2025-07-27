@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,39 +16,6 @@ import { Download, Package, Users, Truck, Phone, Mail, MapPin, Plus, Minus, Tag 
 import { useRouter } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
-
-const bulkProducts = [
-  {
-    id: 1,
-    name: "500ml Raw Honey",
-    retailPrice: 350,
-    bulkPrice: 280,
-    minQuantity: 50,
-    image: "/placeholder.svg?height=200&width=200",
-    selected: false,
-    quantity: 50,
-  },
-  {
-    id: 2,
-    name: "1 Litre Raw Honey",
-    retailPrice: 600,
-    bulkPrice: 480,
-    minQuantity: 25,
-    image: "/placeholder.svg?height=200&width=200",
-    selected: false,
-    quantity: 25,
-  },
-  {
-    id: 3,
-    name: "Royal Glow Honey Wax",
-    retailPrice: 40,
-    bulkPrice: 32,
-    minQuantity: 100,
-    image: "/placeholder.svg?height=200&width=200",
-    selected: false,
-    quantity: 100,
-  },
-]
 
 export default function BulkOrdersPage() {
   const router = useRouter()
@@ -66,10 +33,37 @@ export default function BulkOrdersPage() {
     message: "",
   })
 
-  const [selectedProducts, setSelectedProducts] = useState(bulkProducts)
+  // Products fetched from API
+  const [selectedProducts, setSelectedProducts] = useState<any[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [submitResult, setSubmitResult] = useState<null | { success: boolean; message: string }>(null)
   const [orderId, setOrderId] = useState<string | null>(null)
+
+  // Fetch products from admin API
+  useEffect(() => {
+    async function fetchProducts() {
+      try {
+        const res = await fetch("/api/admin/products")
+        const data = await res.json()
+        // Map API products to expected structure
+        const products = data.products.map((product: any) => ({
+          id: product.id,
+          name: product.name,
+          retailPrice: product.retailPrice,
+          bulkPrice: product.bulkPrice,
+          minQuantity: product.minQuantity,
+          image: product.image || "/placeholder.svg?height=200&width=200",
+          selected: false,
+          quantity: product.minQuantity,
+        }))
+        setSelectedProducts(products)
+      } catch (err) {
+        // fallback: empty array
+        setSelectedProducts([])
+      }
+    }
+    fetchProducts()
+  }, [])
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -203,25 +197,33 @@ export default function BulkOrdersPage() {
               {selectedProducts.map((product) => (
                 <Card
                   key={product.id}
-                  className={`border-2 transition-all ${product.selected ? "border-amber-600 bg-amber-50 dark:bg-amber-950/20" : "border-gray-200"}`}
+                  className={`border-2 transition-all duration-300 shadow-lg hover:shadow-amber-200 dark:hover:shadow-amber-900
+                    ${product.selected ? "border-amber-600 bg-gradient-to-br from-amber-50 to-yellow-100 dark:from-amber-950/40 dark:to-yellow-900/20 scale-[1.02]" : "border-gray-200 bg-white dark:bg-gray-900"}
+                  `}
+                  style={{ position: "relative", overflow: "visible" }}
                 >
                   <CardContent className="p-6">
                     <div className="flex items-start space-x-4">
                       <Checkbox
                         checked={product.selected}
                         onCheckedChange={(checked) => handleProductSelection(product.id, checked as boolean)}
-                        className="mt-2"
+                        className="mt-2 accent-amber-600 scale-125 transition-transform duration-200"
                       />
-                      <div className="relative h-20 w-20 rounded-lg overflow-hidden flex-shrink-0">
+                      <div className="relative h-20 w-20 rounded-lg overflow-hidden flex-shrink-0 shadow-md border-2 border-amber-100 dark:border-amber-900">
                         <Image
                           src={product.image || "/placeholder.svg"}
                           alt={product.name}
                           fill
-                          className="object-cover"
+                          className="object-cover transition-transform duration-300 hover:scale-105"
                         />
+                        {product.selected && (
+                          <span className="absolute top-1 right-1 bg-amber-600 text-white text-xs px-2 py-0.5 rounded-full shadow">
+                            Selected
+                          </span>
+                        )}
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-2">{product.name}</h3>
+                        <h3 className="font-semibold text-lg text-amber-700 dark:text-amber-300 mb-2 transition-colors duration-300">{product.name}</h3>
                         <div className="grid grid-cols-2 gap-4 text-sm mb-4">
                           <div>
                             <p className="text-gray-600 dark:text-gray-300">Retail Price</p>
@@ -237,7 +239,7 @@ export default function BulkOrdersPage() {
                           <div className="space-y-3">
                             <div className="flex items-center space-x-3">
                               <Label className="text-sm">Quantity:</Label>
-                              <div className="flex items-center border rounded-lg">
+                              <div className="flex items-center border rounded-lg bg-white dark:bg-gray-800 shadow-sm">
                                 <Button
                                   variant="ghost"
                                   size="icon"
@@ -256,7 +258,7 @@ export default function BulkOrdersPage() {
                                       Number.parseInt(e.target.value) || product.minQuantity,
                                     )
                                   }
-                                  className="w-20 text-center border-0 focus-visible:ring-0"
+                                  className="w-20 text-center border-0 focus-visible:ring-0 font-bold text-amber-700 dark:text-amber-300"
                                   min={product.minQuantity}
                                 />
                                 <Button
@@ -283,9 +285,11 @@ export default function BulkOrdersPage() {
                         )}
 
                         {!product.selected && (
-                          <div className="mt-2">
-                            <Badge variant="secondary">Min Order: {product.minQuantity} units</Badge>
-                            <Badge className="ml-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                              Min Order: {product.minQuantity} units
+                            </Badge>
+                            <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                               Save ₹{product.retailPrice - product.bulkPrice} per unit
                             </Badge>
                           </div>

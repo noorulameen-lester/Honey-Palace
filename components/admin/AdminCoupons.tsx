@@ -553,7 +553,11 @@ export default function AdminCouponsPage() {
                         <span className="capitalize">{coupon.status}</span>
                       </Badge>
                     </TableCell>
-                    <TableCell>{format(coupon.endDate, "MMM dd, yyyy")}</TableCell>
+                    <TableCell>
+                      {coupon.endDate && !isNaN(new Date(coupon.endDate).getTime())
+                        ? format(new Date(coupon.endDate), "MMM dd, yyyy")
+                        : "-"}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
                         <Button variant="ghost" size="sm">

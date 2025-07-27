@@ -50,6 +50,7 @@ export default function AdminProducts() {
   const [loading, setLoading] = useState(true)
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null)
   const [savingEdit, setSavingEdit] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchProducts()
@@ -59,9 +60,19 @@ export default function AdminProducts() {
     setLoading(true)
     try {
       const res = await fetch("/api/products")
-      const data = await res.json()
+      let data;
+      const text = await res.text();
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        setError("Server error: Invalid JSON response");
+        setLoading(false);
+        return;
+      }
       if (data.success) {
         setProducts(data.products)
+      } else {
+        setError(data.error || "Failed to fetch products");
       }
     } finally {
       setLoading(false)
@@ -111,12 +122,22 @@ export default function AdminProducts() {
       const res = await fetch(`/api/products/${productId}`, {
         method: "DELETE",
       })
-      const data = await res.json()
+      let data;
+      const text = await res.text();
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        alert("Server error: Invalid JSON response");
+        setDeletingProductId(null);
+        return;
+      }
       if (data.success) {
         fetchProducts()
+      } else {
+        alert(data.error || "Failed to delete product");
       }
     } catch (err) {
-      // Optionally, show error
+      alert("Failed to delete product");
     }
     setDeletingProductId(null)
   }

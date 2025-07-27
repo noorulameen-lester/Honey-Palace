@@ -35,7 +35,7 @@ export default function LoginPage() {
 
     try {
       // Check for admin credentials
-      if (formData.email === "shaz80170@gmail.com" && formData.password === "871459") {
+      if (formData.email === "nooru36124@gmail.com" && formData.password === "12345") {
         // Admin login
         localStorage.setItem("isAdmin", "true")
         localStorage.setItem(

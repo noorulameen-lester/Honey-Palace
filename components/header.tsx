@@ -19,8 +19,6 @@ export function Header() {
     { name: "About Us", href: "/about" },
     { name: "Bulk Orders", href: "/bulk-orders" },
     { name: "Order Tracking", href: "/order-tracking" },
-    // { name: "Certifications", href: "/certifications" },
-    // { name: "Blog", href: "/blog" },
     { name: "Contact", href: "/contact" },
   ]
 
@@ -39,96 +37,146 @@ export function Header() {
   }, [])
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <Image src="/favicon.ico" alt="Honey Palace" width={32} height={32} className="rounded-full" />
-            <div className="flex flex-col">
-              <span className="font-bold text-lg text-foreground">Honey Palace</span>
-              {/* <span className="text-xs text-muted-foreground">Nature's Sweetest Gift</span> */}
-            </div>
+    <header className="sticky top-0 z-50 w-full bg-gradient-to-r from-amber-50 to-yellow-100 dark:from-[#1a1a1e] dark:to-[#222228] border-b border-amber-200 dark:border-gray-700 shadow-md">
+      <div className="container mx-auto px-6">
+        <div className="flex h-20 items-center justify-between">
+          {/* Logo Section */}
+          <Link href="/" className="flex items-center space-x-3 group">
+            <Image
+              src="/favicon.ico"
+              alt="Honey Palace"
+              width={40}
+              height={40}
+              className="rounded-md shadow-md"
+            />
+            <span className="font-extrabold text-3xl header-title-gradient tracking-wide animate-header-title">
+              Honey Palace
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-6">
+          <nav className="hidden md:flex items-center space-x-8">
             {navigation.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                className="text-base font-semibold header-link transition-colors duration-300"
               >
                 {item.name}
               </Link>
             ))}
           </nav>
 
-          {/* Search Bar */}
-          <div className="hidden lg:flex items-center space-x-2 flex-1 max-w-sm mx-8">
-            <div className="relative w-full">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search products..." className="pl-8" />
-            </div>
-          </div>
-
-          {/* Right Side Actions */}
-          <div className="flex items-center space-x-2">
+          {/* Right Actions */}
+          <div className="flex items-center space-x-4">
             {/* Theme Toggle */}
             <ThemeToggle />
 
             {/* Cart */}
             <Link href="/cart">
-              <Button variant="ghost" size="icon" className="relative h-9 w-9">
-                <ShoppingCart className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="relative h-10 w-10 hover:bg-amber-100 dark:hover:bg-gray-800">
+                <ShoppingCart className="h-5 w-5 text-gray-700 dark:text-gray-300 group-hover:text-amber-500 transition" />
                 {cartTotal > 0 && (
-                  <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                  <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full flex items-center justify-center text-xs bg-amber-500 text-white shadow-md">
                     {cartTotal}
                   </Badge>
                 )}
               </Button>
             </Link>
 
-            {/* User Account */}
+            {/* User */}
             <Link href="/auth/login">
-              <Button variant="ghost" size="icon" className="h-9 w-9">
-                <User className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-amber-100 dark:hover:bg-gray-800">
+                <User className="h-5 w-5 text-gray-700 dark:text-gray-300 group-hover:text-amber-500 transition" />
               </Button>
             </Link>
 
-            {/* Mobile Menu Toggle */}
+            {/* Mobile Menu */}
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden h-9 w-9"
+              className="md:hidden h-10 w-10 hover:bg-amber-100 dark:hover:bg-gray-800"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
-              {isMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
           </div>
         </div>
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden border-t py-4">
-            <nav className="flex flex-col space-y-4">
+          <div className="md:hidden border-t py-4 animate-fade-in-down">
+            <nav className="flex flex-col space-y-5 text-center">
               {navigation.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-lg font-semibold header-link transition-colors duration-300"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   {item.name}
                 </Link>
               ))}
-              <div className="pt-4 border-t">
-                <Input placeholder="Search products..." />
+              <div className="pt-4 border-t px-4">
+                <Input placeholder="Search products..." className="w-full" />
               </div>
             </nav>
           </div>
         )}
       </div>
+
+      {/* Styles */}
+      <style jsx global>{`
+        @keyframes header-title-fade-in {
+          0% {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-header-title {
+          animation: header-title-fade-in 1.2s ease-in-out both;
+        }
+        .header-title-gradient {
+          background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 50%, #f59e0b 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          font-weight: 900;
+          letter-spacing: 0.5px;
+        }
+        .header-link {
+          color: #333;
+          position: relative;
+          font-size: 1rem;
+        }
+        .header-link:after {
+          content: "";
+          display: block;
+          width: 0;
+          height: 2px;
+          background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%);
+          transition: width 0.3s;
+          position: absolute;
+          left: 0;
+          bottom: -4px;
+        }
+        .header-link:hover {
+          color: #f59e0b;
+        }
+        .header-link:hover:after {
+          width: 100%;
+        }
+        .dark .header-link {
+          color: #f3f3f7;
+        }
+        .dark .header-link:hover {
+          color: #fbbf24;
+        }
+      `}</style>
     </header>
   )
 }

@@ -30,12 +30,43 @@ export default function AdminAnalytics() {
     const fetchAnalytics = async () => {
       try {
         setLoading(true)
-        const res = await fetch("/api/admin/analytics")
-        if (!res.ok) throw new Error("Failed to fetch analytics")
-        const data = await res.json()
-        setAnalytics(data.analytics || {})
+        const [ordersRes, bulkOrdersRes] = await Promise.all([
+          fetch("/api/orders"),
+          fetch("/api/bulk-orders"),
+        ])
+        const ordersData = await ordersRes.json()
+        const bulkOrdersData = await bulkOrdersRes.json()
+        // Build customers from orders and bulk orders
+        let customersArr: any[] = []
+        if (ordersData.success) {
+          customersArr = customersArr.concat(
+            ordersData.orders.map((order: any) => ({
+              email: order.formData?.email,
+              name: `${order.formData?.firstName || ""} ${order.formData?.lastName || ""}`.trim(),
+            }))
+          )
+        }
+        if (bulkOrdersData.success) {
+          customersArr = customersArr.concat(
+            bulkOrdersData.orders.map((order: any) => ({
+              email: order.formData?.email,
+              name: order.formData?.contactPerson || order.formData?.businessName || "",
+            }))
+          )
+        }
+        // Deduplicate by email
+        const deduped: Record<string, any> = {}
+        for (const c of customersArr) {
+          if (!c.email) continue
+          if (!deduped[c.email]) {
+            deduped[c.email] = { ...c }
+          }
+        }
+        setAnalytics((prev: any) => ({
+          ...prev,
+          totalCustomers: Object.keys(deduped).length,
+        }))
       } catch (err: any) {
-        console.error(err)
         setError(err.message)
       } finally {
         setLoading(false)

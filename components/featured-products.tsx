@@ -2,11 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import Image from "next/image";
-import { Star, ShoppingCart } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import { addToCart } from "@/hooks/use-cart";
 import { toast } from "@/hooks/use-toast";
 
@@ -17,9 +14,6 @@ type Product = {
   image?: string;
   price: number;
   category: string;
-  badge?: string;
-  rating?: number;
-  reviews?: number;
 };
 
 export function FeaturedProducts() {
@@ -52,14 +46,14 @@ export function FeaturedProducts() {
   if (loading) {
     return (
       <div className="py-12 text-center">
-        <p className="text-lg text-gray-600 dark:text-gray-300 animate-pulse">Loading featured products...</p>
+        <p className="text-lg text-gray-400 animate-pulse">Loading featured products...</p>
       </div>
     );
   }
   if (error) {
     return (
       <div className="py-12 text-center">
-        <p className="text-lg text-red-600 dark:text-red-400">{error}</p>
+        <p className="text-lg text-red-500">{error}</p>
       </div>
     );
   }
@@ -68,98 +62,69 @@ export function FeaturedProducts() {
   return (
     <section className="py-12">
       <div className="container mx-auto px-4">
-        <h2 className="text-3xl font-extrabold text-center mb-8 text-gray-900 dark:text-white">Featured Products</h2>
-        <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <h2 className="text-4xl font-extrabold text-center mb-10 text-amber-600 dark:text-amber-400">
+    
+        </h2>
+        <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {products.map((product) => (
-            <Card
+            <div
               key={product._id}
-              className="group hover:shadow-2xl card-hover-up transition-all duration-300 border-0 shadow-lg rounded-3xl bg-white/90 dark:bg-zinc-900/80 flex flex-col"
+              className="flex flex-col bg-white dark:bg-[#1f1f25] rounded-2xl shadow-md dark:shadow-lg border border-gray-200 dark:border-[#2a2a35] p-5 transition-transform duration-300 hover:scale-105"
             >
-              <CardContent className="p-0 flex flex-col flex-1">
-                <div className="relative overflow-hidden rounded-t-3xl">
-                  <Image
-                    src={product.image || "/placeholder.svg"}
-                    alt={product.name || "Product image"}
-                    width={400}
-                    height={400}
-                    className="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
-                    unoptimized
-                  />
-                  {product.badge && (
-                    <Badge
-                      className={`absolute top-4 left-4 px-4 py-1 text-sm font-semibold rounded-full shadow ${
-                        product.badge === "Best Seller"
-                          ? "bg-amber-600"
-                          : product.badge === "Premium"
-                          ? "bg-purple-600"
-                          : product.badge === "New"
-                          ? "bg-green-600"
-                          : "bg-red-600"
-                      }`}
-                    >
-                      {product.badge}
-                    </Badge>
-                  )}
-                </div>
-                <div className="p-5 flex flex-col flex-1">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">{product.name}</h3>
-                  <p className="text-gray-500 dark:text-gray-300 text-sm mb-2 line-clamp-2 min-h-[36px]">
-                    {product.description || "No description available."}
-                  </p>
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="flex items-center">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-4 h-4 ${
-                            i < Math.floor(product.rating || 0) ? "text-amber-400 fill-current" : "text-gray-300"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-xs text-gray-500 dark:text-gray-300">
-                      {product.rating || 0} ({product.reviews || 0})
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xl font-extrabold text-amber-600">₹{product.price}</span>
-                  </div>
-                  <div className="flex gap-2 mt-auto">
-                    <Button
-                      variant="outline"
-                      className="flex-1 bg-white/80 hover:bg-amber-50 border-amber-100"
-                      onClick={() => router.push(`/products/${product._id}`)}
-                    >
-                      View Details
-                    </Button>
-                    <Button
-                      size="icon"
-                      className="bg-amber-600 hover:bg-amber-700"
-                      onClick={() => {
-                        try {
-                          addToCart(product, 1);
-                          toast({ title: "Added to Cart", description: `${product.name} added to your cart.` });
-                        } catch {
-                          toast({
-                            title: "Error",
-                            description: "Could not add to cart. Please try again.",
-                            variant: "destructive",
-                          });
-                        }
-                      }}
-                    >
-                      <ShoppingCart className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              <img
+                src={product.image || "/placeholder.svg"}
+                alt={product.name}
+                className="w-full h-52 object-cover rounded-xl mb-4"
+              />
+              <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-2">{product.name}</h3>
+              <p className="text-xl font-extrabold text-amber-600 dark:text-amber-400 mb-4">
+                ₹{product.price}
+              </p>
+
+              {/* Buttons */}
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1 border-amber-500 text-amber-600 hover:bg-amber-50 dark:border-amber-400 dark:text-amber-400 dark:hover:bg-amber-400/10"
+                  onClick={() => router.push(`/products/${product._id}`)}
+                >
+                  View
+                </Button>
+                <Button
+                  size="icon"
+                  className="bg-amber-500 hover:bg-amber-600 text-white"
+                  onClick={() => {
+                    try {
+                      addToCart(product, 1);
+                      toast({ title: "Added to Cart", description: `${product.name} added to your cart.` });
+                    } catch {
+                      toast({
+                        title: "Error",
+                        description: "Could not add to cart. Please try again.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                </Button>
+              </div>
+
+              {/* Buy Now button full width */}
+              <Button
+                className="mt-4 w-full bg-green-500 hover:bg-green-600 text-white font-semibold rounded-full"
+                onClick={() => router.push(`/checkout?productId=${product._id}&qty=1`)}
+              >
+                Buy Now
+              </Button>
+            </div>
           ))}
         </div>
-        <div className="flex justify-center mt-8">
+
+        {/* View All Button */}
+        <div className="flex justify-center mt-10">
           <Button
-            className="bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-full px-8 py-3 text-lg"
+            className="bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-full px-8 py-3 text-lg"
             onClick={() => router.push("/products")}
           >
             View All Products

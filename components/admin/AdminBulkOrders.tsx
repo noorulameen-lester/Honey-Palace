@@ -48,7 +48,15 @@ export default function AdminBulkOrdersPage() {
     setLoading(true)
     try {
       const res = await fetch("/api/bulk-orders")
-      const data = await res.json()
+      let data;
+      const text = await res.text();
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        alert("Server error: Invalid JSON response");
+        setLoading(false);
+        return;
+      }
       if (data.success) {
         setBulkOrders(data.orders)
       }
@@ -113,6 +121,29 @@ export default function AdminBulkOrdersPage() {
     }
   }
 
+  // Reset all bulk orders
+  const handleResetBulkOrders = async () => {
+    if (!window.confirm("Are you sure you want to reset all bulk orders? This cannot be undone.")) return;
+    try {
+      const res = await fetch("/api/admin/analytics/reset-bulk-orders", { method: "POST" });
+      let data;
+      const text = await res.text();
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        alert("Server error: Invalid JSON response");
+        return;
+      }
+      if (!data.success) {
+        alert(data?.error || "Failed to reset bulk orders");
+        return;
+      }
+      await fetchBulkOrders();
+    } catch (err) {
+      alert("Failed to reset bulk orders");
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -121,10 +152,28 @@ export default function AdminBulkOrdersPage() {
           <h1 className="text-3xl font-bold tracking-tight">Bulk Orders</h1>
           <p className="text-muted-foreground">Manage and track bulk orders from business customers</p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          New Bulk Order
-        </Button>
+        <div className="flex gap-2">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                New Bulk Order
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>New Bulk Order</DialogTitle>
+              </DialogHeader>
+              <div>
+                <p>Redirect to bulk order form or show form here.</p>
+                {/* You can add your bulk order form here or link to the bulk order page */}
+              </div>
+            </DialogContent>
+          </Dialog>
+          <Button variant="destructive" onClick={handleResetBulkOrders}>
+            Reset Bulk Orders
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -253,7 +302,7 @@ export default function AdminBulkOrdersPage() {
                         </TableCell>
                         <TableCell>{new Date(order.orderDate).toLocaleDateString()}</TableCell>
                         <TableCell>{new Date(order.deliveryDate).toLocaleDateString()}</TableCell>
-                        <TableCell>${(order.totalAmount !== undefined ? order.totalAmount : Array.isArray(order.items) ? order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0) : 0).toLocaleString()}</TableCell>
+                        <TableCell>${(order.totalAmount !== undefined ? order.totalAmount : Array.isArray(order.items) ? order.items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0) : 0).toLocaleString()}</TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-2">
                             <Dialog>
@@ -366,7 +415,7 @@ export default function AdminBulkOrdersPage() {
                                               typeof selectedOrder.totalAmount === 'number' && !isNaN(selectedOrder.totalAmount)
                                                 ? selectedOrder.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                                                 : Array.isArray(selectedOrder.items)
-                                                  ? selectedOrder.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                                  ? selectedOrder.items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                                                   : '0.00'
                                             }
                                           </div>
