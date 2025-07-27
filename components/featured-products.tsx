@@ -63,7 +63,7 @@ export function FeaturedProducts() {
     <section className="py-12">
       <div className="container mx-auto px-4">
         <h2 className="text-4xl font-extrabold text-center mb-10 text-amber-600 dark:text-amber-400">
-    
+          Featured Products
         </h2>
         <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {products.map((product) => (
@@ -72,11 +72,12 @@ export function FeaturedProducts() {
               className="flex flex-col bg-white dark:bg-[#1f1f25] rounded-2xl shadow-md dark:shadow-lg border border-gray-200 dark:border-[#2a2a35] p-5 transition-transform duration-300 hover:scale-105"
             >
               <img
-                src={product.image || "/placeholder.svg"}
+                src={product.image && product.image.trim() !== "" ? product.image : "/placeholder.svg"}
                 alt={product.name}
                 className="w-full h-52 object-cover rounded-xl mb-4"
               />
               <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-2">{product.name}</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{product.description || "No description available."}</p>
               <p className="text-xl font-extrabold text-amber-600 dark:text-amber-400 mb-4">
                 ₹{product.price}
               </p>

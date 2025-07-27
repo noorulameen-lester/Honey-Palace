@@ -168,9 +168,9 @@ export default function ProductDetailPage() {
           <div className="space-y-6">
             <div className="relative aspect-square rounded-3xl overflow-hidden bg-white dark:bg-gray-800 shadow-xl transition-transform duration-300 hover:scale-[1.02]">
               <Image
-                src={Array.isArray(product.images) && product.images.length > 0
+                src={Array.isArray(product.images) && product.images.length > 0 && product.images[selectedImage] && product.images[selectedImage].trim() !== ""
                   ? product.images[selectedImage]
-                  : product.image || "/placeholder.svg"}
+                  : (product.image && product.image.trim() !== "" ? product.image : "/placeholder.svg")}
                 alt={product.name}
                 fill
                 className="object-cover"
@@ -191,12 +191,21 @@ export default function ProductDetailPage() {
                       selectedImage === index ? "border-amber-600 scale-105 shadow-lg" : "border-gray-200 dark:border-gray-700"
                     }`}
                   >
-                    <Image
-                      src={image || "/placeholder.svg"}
-                      alt={`${product.name} ${index + 1}`}
-                      fill
-                      className="object-cover"
-                    />
+                    {image && image.trim() !== "" ? (
+                      <Image
+                        src={image}
+                        alt={`${product.name} ${index + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <Image
+                        src="/placeholder.svg"
+                        alt={`${product.name} ${index + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                    )}
                   </button>
                 ))}
               </div>
@@ -233,7 +242,7 @@ export default function ProductDetailPage() {
                   </Badge>
                 )}
               </div>
-              <p className="text-gray-700 dark:text-gray-200 leading-relaxed">{product.description}</p>
+              <p className="text-gray-700 dark:text-gray-200 leading-relaxed">{product.description || "No description available."}</p>
             </div>
 
             {/* Stock Status */}

@@ -1,3 +1,4 @@
+// app/api/products/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 
@@ -11,13 +12,13 @@ interface Product {
   specifications?: Record<string, string>;
   benefits?: string[];
   createdAt: Date;
+  featured?: boolean;
 }
 
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json();
 
-    // ✅ Validation
     if (!data.name || !data.price) {
       return NextResponse.json({ success: false, error: "Name and Price are required" }, { status: 400 });
     }
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
       createdAt: new Date(),
       ...(data.originalPrice && { originalPrice: Number(data.originalPrice) }),
       ...(data.image && { image: data.image }),
-      ...(Array.isArray(data.images) && data.images.length > 0 && { images: data.images }),
+      ...(Array.isArray(data.images) && { images: data.images }),
       ...(Array.isArray(data.features) && { features: data.features }),
       ...(data.specifications && typeof data.specifications === "object" && { specifications: data.specifications }),
       ...(Array.isArray(data.benefits) && { benefits: data.benefits }),
@@ -48,13 +49,21 @@ export async function GET(req: NextRequest) {
   try {
     const { db } = await connectToDatabase();
 
-    // ✅ Optional Pagination
-    const limit = parseInt(req.nextUrl.searchParams.get("limit") || "20");
-    const page = parseInt(req.nextUrl.searchParams.get("page") || "1");
+    const featured = req.nextUrl.searchParams.get("featured");
+    const limitParam = req.nextUrl.searchParams.get("limit");
+    const pageParam = req.nextUrl.searchParams.get("page");
+
+    const query: any = {};
+    if (featured === "true") {
+      query.$or = [{ featured: true }, { featured: "true" }, { badge: "Featured" }];
+    }
+
+    const limit = parseInt(limitParam || "20");
+    const page = parseInt(pageParam || "1");
     const skip = (page - 1) * limit;
 
     const products = await db.collection("products")
-      .find({})
+      .find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)

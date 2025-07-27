@@ -111,7 +111,7 @@ export default function CartPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-4">
                     <div className="relative h-24 w-24 rounded-lg overflow-hidden">
-                      <Image src={item.image || "/placeholder.svg"} alt={item.name} fill className="object-cover" />
+                      <Image src={item.image && item.image.trim() !== "" ? item.image : "/placeholder.svg"} alt={item.name} fill className="object-cover" />
                     </div>
 
                     <div className="flex-1">

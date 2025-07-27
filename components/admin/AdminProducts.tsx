@@ -689,16 +689,18 @@ export default function AdminProducts() {
                     let imgSrc = "/placeholder.svg";
                     if (Array.isArray(product.images) && product.images.length > 0 && typeof product.images[0] === "string" && product.images[0]) {
                       imgSrc = product.images[0];
-                    } else if (typeof product.image === "string" && product.image) {
+                    } else if (typeof product.image === "string" && product.image && product.image.trim() !== "") {
                       imgSrc = product.image;
                     }
                     return (
-                      <Image
-                        src={imgSrc}
-                        alt={String(product.name || 'Product image')}
-                        fill
-                        className="object-cover"
-                      />
+                      imgSrc ? (
+                        <Image
+                          src={imgSrc}
+                          alt={String(product.name || 'Product image')}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : null
                     );
                   })()}
                 </div>
@@ -711,7 +713,7 @@ export default function AdminProducts() {
                       </Badge>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">{product.description}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">{product.description || "No description available."}</p>
                   <div className="mt-3 space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600 dark:text-gray-300">Price:</span>

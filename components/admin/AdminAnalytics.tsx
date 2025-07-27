@@ -26,6 +26,24 @@ export default function AdminAnalytics() {
   const [error, setError] = useState<string | null>(null)
   const [timeRange, setTimeRange] = useState("6months")
 
+  // Reset all analytics
+  const handleResetAllAnalytics = async () => {
+    if (!window.confirm("Are you sure you want to reset all analytics? This cannot be undone.")) return;
+    try {
+      const res = await fetch("/api/admin/analytics/reset-all", { method: "POST" });
+      const data = await res.json();
+      if (!data.success) {
+        alert(data?.error || "Failed to reset analytics");
+        return;
+      }
+      alert("Analytics reset successfully");
+      // Refresh the page or refetch data
+      window.location.reload();
+    } catch (err) {
+      alert("Failed to reset analytics");
+    }
+  }
+
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
@@ -124,6 +142,14 @@ export default function AdminAnalytics() {
           <Button variant="outline" size="sm">
             <Download className="h-4 w-4 mr-2" />
             Export Report
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={handleResetAllAnalytics}
+            title="Reset all analytics"
+          >
+            Reset All Analytics
           </Button>
         </div>
       </div>

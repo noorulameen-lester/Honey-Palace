@@ -13,8 +13,6 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { addToCart } from "@/hooks/use-cart";
 import { toast } from "@/hooks/use-toast";
-
-// Add Google Fonts
 import Head from "next/head";
 
 type Product = {
@@ -22,6 +20,7 @@ type Product = {
   name: string;
   description?: string;
   image?: string;
+  images?: string[];
   price: number;
   category: string;
   badge?: string;
@@ -83,13 +82,17 @@ export default function ProductsPage() {
   return (
     <>
       <Head>
-        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Playfair+Display:wght@700&display=swap"
+          rel="stylesheet"
+        />
       </Head>
       <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-100 to-yellow-50 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 font-[Montserrat] flex flex-col">
         {/* Header */}
         <div className="w-full shadow-md bg-white dark:bg-gray-950 z-20">
           <Header />
         </div>
+
         {/* Hero Section */}
         <section className="relative py-16 mb-8 overflow-hidden">
           <div className="absolute inset-0 pointer-events-none">
@@ -105,13 +108,14 @@ export default function ProductsPage() {
             </p>
             <Button
               className="bg-amber-600 hover:bg-amber-700 text-white px-8 py-3 rounded-full shadow-lg transition-all duration-300 animate-fade-in-up"
-              onClick={() => window.scrollTo({ top: 400, behavior: "smooth" })}
+              onClick={() => window.scrollTo({ top: 500, behavior: "smooth" })}
             >
               Shop Now
             </Button>
           </div>
         </section>
-        {/* Filters - moved below hero, above products */}
+
+        {/* Filters */}
         <section className="container mx-auto px-4 mb-10">
           <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-center justify-between bg-white/80 dark:bg-gray-900/80 rounded-2xl shadow-lg p-6 animate-fade-in-up">
             <div className="flex w-full md:w-auto gap-3">
@@ -125,7 +129,7 @@ export default function ProductsPage() {
                 />
               </div>
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="rounded-full shadow-sm border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-40 transition-all duration-300">
+                <SelectTrigger className="rounded-full shadow-sm w-40">
                   <Filter className="w-4 h-4 mr-2" />
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
@@ -138,7 +142,7 @@ export default function ProductsPage() {
                 </SelectContent>
               </Select>
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="rounded-full shadow-sm border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-40 transition-all duration-300">
+                <SelectTrigger className="rounded-full shadow-sm w-40">
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
@@ -151,6 +155,7 @@ export default function ProductsPage() {
             </div>
           </div>
         </section>
+
         {/* Product Grid */}
         <section className="container mx-auto px-4 flex-1">
           {loading ? (
@@ -170,16 +175,17 @@ export default function ProductsPage() {
               {filteredProducts.map((product, idx) => (
                 <Card
                   key={product._id}
-                  className={`group border-0 shadow-xl rounded-3xl bg-white/80 dark:bg-gray-900/80 flex flex-col backdrop-blur-lg transition-all duration-300 hover:scale-105 hover:shadow-2xl animate-fade-in-up`}
-                  style={{ animationDelay: `${idx * 80}ms` }}
+                  className="group border-0 shadow-xl rounded-3xl bg-white dark:bg-gray-900 flex flex-col hover:scale-105 hover:shadow-2xl transition-all duration-300"
                 >
                   <CardContent className="p-0 flex flex-col flex-1">
                     <div className="relative overflow-hidden rounded-t-3xl">
                       <Image
                         src={
-                          Array.isArray((product as any).images) && (product as any).images.length > 0
-                            ? (product as any).images[0]
-                            : product.image || "/placeholder.svg"
+                          Array.isArray(product.images) && product.images.length > 0 && product.images[0]
+                            ? product.images[0]
+                            : product.image && product.image.trim() !== ""
+                            ? product.image
+                            : "/placeholder.svg"
                         }
                         alt={product.name || "Product image"}
                         width={400}
@@ -190,7 +196,7 @@ export default function ProductsPage() {
                       />
                       {product.badge && (
                         <Badge
-                          className={`absolute top-4 left-4 px-4 py-1 text-sm font-semibold rounded-full shadow-lg ${
+                          className={`absolute top-4 left-4 px-4 py-1 rounded-full shadow-md ${
                             product.badge === "Best Seller"
                               ? "bg-amber-600"
                               : product.badge === "Premium"
@@ -205,9 +211,9 @@ export default function ProductsPage() {
                       )}
                     </div>
                     <div className="p-6 flex flex-col flex-1">
-                      <h3 className="text-xl font-[Playfair Display] font-bold text-gray-900 dark:text-white mb-1">{product.name}</h3>
-                      <p className="text-gray-500 dark:text-gray-300 text-sm mb-3 line-clamp-2 min-h-[40px] font-[Montserrat]">
-                        {product.description || "No description available."}
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">{product.name}</h3>
+                      <p className="text-gray-500 dark:text-gray-300 text-sm mb-3 line-clamp-2 min-h-[40px]">
+                        {product.description?.trim() || "No description available."}
                       </p>
                       <div className="flex items-center gap-2 mb-3">
                         <div className="flex items-center">
@@ -216,7 +222,7 @@ export default function ProductsPage() {
                               key={i}
                               className={`w-4 h-4 ${
                                 i < Math.floor(product.rating || 0) ? "text-amber-400 fill-current" : "text-gray-300"
-                              } transition-all duration-300`}
+                              }`}
                             />
                           ))}
                         </div>
@@ -225,46 +231,34 @@ export default function ProductsPage() {
                         </span>
                       </div>
                       <div className="flex items-center justify-between mb-4">
-                        <span className="text-2xl font-extrabold text-amber-600 font-[Playfair Display]">₹{product.price}</span>
+                        <span className="text-2xl font-extrabold text-amber-600">₹{product.price}</span>
                       </div>
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
-                          className="flex-1 bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-700 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-800 transition-all duration-300"
+                          className="flex-1"
                           onClick={() => router.push(`/products/${product._id}`)}
                         >
                           View Details
                         </Button>
                         <Button
                           size="icon"
-                          className="bg-amber-600 hover:bg-amber-700 text-white transition-all duration-300"
+                          className="bg-amber-600 hover:bg-amber-700 text-white"
                           onClick={() => {
-                            try {
-                              addToCart(product, 1);
-                              toast({ title: "Added to Cart", description: `${product.name} added to your cart.` });
-                            } catch {
-                              toast({
-                                title: "Error",
-                                description: "Could not add to cart. Please try again.",
-                                variant: "destructive",
-                              });
-                            }
+                            addToCart(product, 1);
+                            toast({ title: "Added to Cart", description: `${product.name} added to your cart.` });
                           }}
                         >
                           <ShoppingCart className="w-4 h-4" />
                         </Button>
                       </div>
                       <Button
-                        className="w-full mt-4 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-full transition-all duration-300"
+                        className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white"
                         onClick={() => {
-                          // Redirect to checkout page for this product (buy now flow)
-                          sessionStorage.setItem("buyNowItem", JSON.stringify({
-                            id: product._id,
-                            name: product.name,
-                            price: product.price,
-                            quantity: 1,
-                            image: product.image,
-                          }));
+                          sessionStorage.setItem(
+                            "buyNowItem",
+                            JSON.stringify({ id: product._id, name: product.name, price: product.price, quantity: 1 })
+                          );
                           router.push("/checkout?buyNow=true");
                         }}
                       >
@@ -277,26 +271,11 @@ export default function ProductsPage() {
             </div>
           )}
         </section>
+
         {/* Footer */}
-        <div className="w-full mt-12 shadow-inner bg-white dark:bg-gray-950 z-20">
+        <div className="w-full mt-12">
           <Footer />
         </div>
-        {/* Animations and global styles */}
-        <style jsx global>{`
-          body, .font-[Montserrat] { font-family: 'Montserrat', sans-serif; }
-          .font-[Playfair Display] { font-family: 'Playfair Display', serif; }
-          @keyframes fade-in-up {
-            0% { opacity: 0; transform: translateY(30px);}
-            100% { opacity: 1; transform: translateY(0);}
-          }
-          @keyframes fade-in-down {
-            0% { opacity: 0; transform: translateY(-30px);}
-            100% { opacity: 1; transform: translateY(0);}
-          }
-          .animate-fade-in-up { animation: fade-in-up 0.8s cubic-bezier(.4,0,.2,1) both; }
-          .animate-fade-in-down { animation: fade-in-down 0.8s cubic-bezier(.4,0,.2,1) both; }
-          .animate-fade-in { animation: fade-in-up 0.7s cubic-bezier(.4,0,.2,1) both; }
-        `}</style>
       </div>
     </>
   );
